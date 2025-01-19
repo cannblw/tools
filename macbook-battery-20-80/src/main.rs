@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     process::{Command, Output},
     str, thread,
     time::Duration,
@@ -67,7 +68,7 @@ fn display_alert(title: &str, message: &str) -> Result<Output, std::io::Error> {
 /// This is calculated using a simple parabolic function (y=ax^2+bx+c). The sleep time is the highest
 /// when your battery level is 50%, and it's always 1 minute when you battery level is
 /// 20% and 80%. The interval varies more aggresively when you get closer to 20% and 80%,
-/// and it's relatively stable when you're close to 50%
+/// and it's relatively stable when you're close to 50%. The minimum return value is 60 seconds
 fn get_sleep_seconds(current_battery_level: i32, maximum_interval_in_seconds: i32) -> i32 {
     let maximum_interval_in_seconds = maximum_interval_in_seconds as f32;
 
@@ -78,7 +79,7 @@ fn get_sleep_seconds(current_battery_level: i32, maximum_interval_in_seconds: i3
     let x = current_battery_level as f32;
     let y = a * x.powi(2) + b * x + c;
 
-    y.round() as i32
+    cmp::max(y.round() as i32, 60)
 }
 
 /// Display the alert if the battery is at dangerous levels.
