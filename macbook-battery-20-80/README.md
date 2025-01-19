@@ -45,3 +45,14 @@ launchctl list | grep com.cannblw.macbookbatterychecker
 launchctl stop com.cannblw.macbookbatterychecker
 launchctl unload ~/Library/LaunchAgents/com.cannblw.macbookbatterychecker.plist
 ```
+
+## Future improvements
+
+If the laptop has just finished charging and you unplug it, the battery check will still run every 1 minute even if you're allowing it to discharge.
+An improvement would be to do something like:
+
+- If battery is close to 80% and laptop not plugged in => Don't check in a long time
+
+For 20%, we should:
+
+- If battery is close to 20% and laptop is plugged in => Don't check in a long time
