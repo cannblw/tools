@@ -14,4 +14,34 @@ This only works for MacOS because the script invokes terminal commands.
 
 ## How to use
 
-Use LaunchD to run this program at startup.
+- Create a release build
+```bash
+cargo build --release
+```
+
+- Move the release build to some other directory, for example ~/bin
+
+- Update `com.cannblw.macbookbatterychecker.plist` to have the paths you want to use. Always use absolute paths.
+
+- Copy `com.cannblw.macbookbatterychecker.plist` to `~/Library/LaunchAgents/`
+
+- Load the LaunchD manifest:
+```bash
+launchctl load ~/Library/LaunchAgents/com.cannblw.macbookbatterychecker.plist
+```
+
+- Start the program using LaunchD
+```bash
+launchctl start com.cannblw.macbookbatterychecker
+```
+
+- Verify that it's running status
+```bash
+launchctl list | grep com.cannblw.macbookbatterychecker
+```
+
+## How to uninstall
+```bash
+launchctl stop com.cannblw.macbookbatterychecker
+launchctl unload ~/Library/LaunchAgents/com.cannblw.macbookbatterychecker.plist
+```
