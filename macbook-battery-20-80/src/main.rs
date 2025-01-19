@@ -8,7 +8,7 @@ use std::{
 // We could make this a CLI setting
 /// Maximum maximum_interval in seconds to run the battery check
 /// This will usually happen when your battery level is 50%
-const MAX_INTERVAL_IN_SECONDS: i32 = 10 * 60;
+const MAX_INTERVAL_IN_SECONDS: i32 = 20 * 60;
 
 fn get_battery_level() -> Result<i32, Box<dyn Error>> {
     let output = Command::new("sh")
