@@ -1,16 +1,17 @@
 use std::{
-    error::Error,
     process::{Command, Output},
     str, thread,
     time::Duration,
 };
+
+type BoxedError = Box<dyn std::error::Error>;
 
 // We could make this a CLI setting
 /// Maximum maximum_interval in seconds to run the battery check
 /// This will usually happen when your battery level is 50%
 const MAX_INTERVAL_IN_SECONDS: i32 = 20 * 60;
 
-fn is_laptop_charging() -> Result<bool, Box<dyn Error>> {
+fn is_laptop_charging() -> Result<bool, BoxedError> {
     let output = Command::new("sh")
         .arg("-c")
         .arg(r#"pmset -g batt | sed -nE "s/Now drawing from '(.*)?'/\1/p""#)
@@ -33,7 +34,7 @@ fn is_laptop_charging() -> Result<bool, Box<dyn Error>> {
     }
 }
 
-fn get_battery_level() -> Result<i32, Box<dyn Error>> {
+fn get_battery_level() -> Result<i32, BoxedError> {
     let output = Command::new("sh")
         .arg("-c")
         .arg("pmset -g batt | grep -Eo '\\d+%' | cut -d% -f1")
@@ -83,24 +84,28 @@ fn get_sleep_seconds(current_battery_level: i32, maximum_interval_in_seconds: i3
 /// Display the alert if the battery is at dangerous levels.
 /// The alert is only fired once, and will then wait until the battery gets to safe levels
 /// before attempting to trigger it again. We don't want the alert to be triggered non-stop
-fn display_alert_if_needed(battery_level: i32, is_alert_allowed: &mut bool) {
-    if *is_alert_allowed && battery_level <= 20 {
+fn display_alert_if_needed(
+    battery_level: i32,
+    is_laptop_charging: &bool,
+    is_alert_allowed: &mut bool,
+) -> Result<(), BoxedError> {
+    if *is_alert_allowed && !*is_laptop_charging && battery_level <= 20 {
         display_alert(
             "Battery Low",
             &format!("Battery is at {}%. Please charge it.", battery_level),
-        )
-        .expect("Error displaying alert");
+        )?;
 
         *is_alert_allowed = false;
-    } else if *is_alert_allowed && battery_level >= 80 {
+    } else if *is_alert_allowed && *is_laptop_charging && battery_level >= 80 {
         display_alert(
             "Battery High",
             &format!("Battery is at {}%. Consider unplugging.", battery_level),
-        )
-        .expect("Error displaying alert");
+        )?;
 
         *is_alert_allowed = false;
     }
+
+    Ok(())
 }
 
 fn main() {
@@ -126,17 +131,34 @@ fn main() {
             }
         };
 
+        let is_laptop_charging = match is_laptop_charging() {
+            Ok(is_charging) => is_charging,
+            Err(err) => {
+                eprintln!(
+                    "Error getting whether the laptop is charging. Error: {}",
+                    err
+                );
+
+                // Assume it's not charging in case of error
+                false
+            }
+        };
+
         if !is_alert_allowed && (battery_level > 20 || battery_level < 80) {
             is_alert_allowed = true;
         }
 
-        display_alert_if_needed(battery_level, &mut is_alert_allowed);
+        if let Err(err) =
+            display_alert_if_needed(battery_level, &is_laptop_charging, &mut is_alert_allowed)
+        {
+            eprintln!("Error performing checks to display alert: {err}");
+        }
 
         let next_execution_in_seconds = get_sleep_seconds(battery_level, MAX_INTERVAL_IN_SECONDS);
 
         println!(
-            "Current battery level: {}%. Checking again in {} seconds.",
-            battery_level, next_execution_in_seconds
+            "Current battery level: {}%. Laptop charging: {}. Checking again in {} seconds.",
+            battery_level, is_laptop_charging, next_execution_in_seconds
         );
 
         thread::sleep(Duration::from_secs(next_execution_in_seconds as u64));
