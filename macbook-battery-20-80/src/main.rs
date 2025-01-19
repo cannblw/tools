@@ -10,6 +10,29 @@ use std::{
 /// This will usually happen when your battery level is 50%
 const MAX_INTERVAL_IN_SECONDS: i32 = 20 * 60;
 
+fn is_laptop_charging() -> Result<bool, Box<dyn Error>> {
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(r#"pmset -g batt | sed -nE "s/Now drawing from '(.*)?'/\1/p""#)
+        .output()?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "Command failed with status {}",
+            output.status.code().unwrap_or(-1)
+        )
+        .into());
+    }
+
+    let output_str = str::from_utf8(&output.stdout)?.trim();
+
+    match output_str {
+        "AC Power" => Ok(true),
+        "Battery Power" => Ok(false),
+        _ => Err("Command contains unexpected output".into()),
+    }
+}
+
 fn get_battery_level() -> Result<i32, Box<dyn Error>> {
     let output = Command::new("sh")
         .arg("-c")
