@@ -4,21 +4,12 @@ use std::{
     time::Duration,
 };
 
-use log::{info, warn};
-
 type BoxedError = Box<dyn std::error::Error>;
 
 // We could make this a CLI setting
 /// Maximum maximum_interval in seconds to run the battery check
 /// This will usually happen when your battery level is 50%
 const MAX_INTERVAL_IN_SECONDS: i32 = 20 * 60;
-
-fn init_logging() {
-    env_logger::builder()
-        .filter_level(log::LevelFilter::Debug)
-        .target(env_logger::Target::Stdout)
-        .init();
-}
 
 fn is_laptop_charging() -> Result<bool, BoxedError> {
     let output = Command::new("sh")
@@ -118,16 +109,14 @@ fn display_alert_if_needed(
 }
 
 fn main() {
-    init_logging();
-
-    info!("== MacBook battery 20%-80% running ==");
+    println!("== MacBook battery 20%-80% running ==");
     let mut is_alert_allowed = true;
 
     loop {
         let battery_level = match get_battery_level() {
             Ok(level) => level,
             Err(err) => {
-                warn!(
+                eprintln!(
                     "Error getting battery level. Skipping check. Error: {}",
                     err
                 );
@@ -145,7 +134,7 @@ fn main() {
         let is_laptop_charging = match is_laptop_charging() {
             Ok(is_charging) => is_charging,
             Err(err) => {
-                warn!(
+                eprintln!(
                     "Error getting whether the laptop is charging. Error: {}",
                     err
                 );
@@ -162,12 +151,12 @@ fn main() {
         if let Err(err) =
             display_alert_if_needed(battery_level, &is_laptop_charging, &mut is_alert_allowed)
         {
-            warn!("Error performing checks to display alert: {err}");
+            eprintln!("Error performing checks to display alert: {err}");
         }
 
         let next_execution_in_seconds = get_sleep_seconds(battery_level, MAX_INTERVAL_IN_SECONDS);
 
-        info!(
+        println!(
             "Current battery level: {}%. Laptop charging: {}. Checking again in {} seconds.",
             battery_level, is_laptop_charging, next_execution_in_seconds
         );
@@ -187,7 +176,7 @@ mod tests {
         let expected_sleep_in_seconds = 60;
 
         for maximum_interval in maximum_interval_in_seconds {
-            info!("Testing maximum interval {}", maximum_interval);
+            println!("Testing maximum interval {}", maximum_interval);
             let sleep_in_seconds = get_sleep_seconds(battery_level, maximum_interval);
             assert_eq!(sleep_in_seconds, expected_sleep_in_seconds);
         }
@@ -200,7 +189,7 @@ mod tests {
         let expected_sleep_in_seconds = 60;
 
         for maximum_interval in maximum_interval_in_seconds {
-            info!("Testing maximum interval {}", maximum_interval);
+            println!("Testing maximum interval {}", maximum_interval);
             let sleep_in_seconds = get_sleep_seconds(battery_level, maximum_interval);
             assert_eq!(sleep_in_seconds, expected_sleep_in_seconds);
         }
@@ -212,7 +201,7 @@ mod tests {
         let battery_level = 50;
 
         for maximum_interval in maximum_interval_in_seconds {
-            info!("Testing maximum_interval {}", maximum_interval);
+            println!("Testing maximum_interval {}", maximum_interval);
             let sleep_in_seconds = get_sleep_seconds(battery_level, maximum_interval);
             assert_eq!(sleep_in_seconds, maximum_interval);
         }
