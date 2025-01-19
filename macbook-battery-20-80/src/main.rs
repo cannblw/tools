@@ -148,7 +148,7 @@ fn main() {
             }
         };
 
-        if !is_alert_allowed && (battery_level > 20 || battery_level < 80) {
+        if !is_alert_allowed && (battery_level > 20 && battery_level < 80) {
             is_alert_allowed = true;
         }
 
