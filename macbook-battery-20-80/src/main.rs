@@ -90,6 +90,8 @@ fn display_alert_if_needed(
     is_alert_allowed: &mut bool,
 ) -> Result<(), BoxedError> {
     if *is_alert_allowed && !*is_laptop_charging && battery_level <= 20 {
+        println!("Displaying low charge alert");
+
         display_alert(
             "Battery Low",
             &format!("Battery is at {}%. Please charge it.", battery_level),
@@ -97,6 +99,8 @@ fn display_alert_if_needed(
 
         *is_alert_allowed = false;
     } else if *is_alert_allowed && *is_laptop_charging && battery_level >= 80 {
+        println!("Displaying high charge alert");
+
         display_alert(
             "Battery High",
             &format!("Battery is at {}%. Consider unplugging.", battery_level),
